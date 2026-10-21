@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Farmer Was Coder - Python API Edition</title>
+    
+    <!-- PWA & Mobile Web App Meta -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1e2e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TFWR">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+
+    <style>
+        :root {
+            --bg-color: #1e1e2e;
+            --panel-bg: #181825;
+            --panel-border: #313244;
+            --accent-blue: #89b4fa;
+            --accent-green: #a6e3a1;
+            --accent-red: #f38ba8;
+            --accent-gold: #ffd700;
+            --accent-orange: #fab387;
+            --accent-purple: #cba6f7;
+            --text-color: #cdd6f4;
+            --text-muted: #6c7086;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Consolas", monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(17px, 3.2vw, 22px);
+            color: var(--accent-blue);
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .save-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .save-indicator {
+            color: var(--text-muted);
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-reset-save {
+            background-color: transparent;
+            color: var(--accent-red);
+            border: 1px solid #45475a;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-reset-save:hover {
+            background-color: rgba(243, 139, 168, 0.15);
+            border-color: var(--accent-red);
+        }
+
+        /* -------------------------------------------------------------
+           TOP RESOURCE & STATUS BAR
+        ------------------------------------------------------------- */
+        #top-bar {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 6px;
+        }
+
+        #resource-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px 10px;
+            width: 100%;
+            background: var(--panel-bg);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .res-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            background: #11111b;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #313244;
+            user-select: none;
+        }
+
+        .res-icon { font-size: 15px; }
+        .res-val { font-weight: bold; font-family: 'Consolas', monospace; }
+
+        .coin-highlight {
+            border-color: #e6a700 !important;
+            background: #2b2210 !important;
+            color: var(--accent-gold) !important;
+        }
+
+        .grid-highlight {
+            border-color: #3b5278 !important;
+            background: #151e2d !important;
+            color: var(--accent-blue) !important;
+        }
+
+        #hud-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 0 4px;
+        }
+
+        /* -------------------------------------------------------------
+           RESPONSIVE APP CONTAINER
+        ------------------------------------------------------------- */
+        #app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            gap: 16px;
+        }
+
+        /* Desktop: Side-by-Side */
+        @media (min-width: 900px) {
+            #app-container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            #grid-section {
+                flex: 1;
+                max-width: 480px;
+            }
+            #editor-section {
+                flex: 1.35;
+            }
+        }
+
+        /* Mobile Phones: Stacked (Editor on TOP, Grid on BOTTOM) */
+        @media (max-width: 899px) {
+            #app-container {
+                flex-direction: column;
+            }
+            #editor-section {
+                order: 1;
+                width: 100%;
+            }
+            #grid-section {
+                order: 2;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* -------------------------------------------------------------
+           CANVAS & FARM GRID
+        ------------------------------------------------------------- */
+        #canvas-box {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            aspect-ratio: 1 / 1;
+            background: #11111b;
+            border: 3px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+
+        /* -------------------------------------------------------------
+           PLATFORM EXPANSION & UNLOCKS PANEL
+        ------------------------------------------------------------- */
+        .info-panel {
+            background-color: #151521;
+            border: 1px solid #363a4f;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .panel-heading {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expansion-card {
+            background: #1e1e2e;
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .expansion-info {
+            font-size: 13px;
+        }
+
+        .btn-upgrade {
+            background-color: var(--accent-blue);
+            color: #11111b;
+            border: none;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .btn-upgrade:disabled {
+            background-color: #45475a;
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .btn-upgrade:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+
+        /* Unlocked Crops Status Badges */
+        .unlocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 6px;
+        }
+
+        .unlock-badge {
+            background: #11111b;
+            border: 1px solid #313244;
+            border-radius: 6px;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .badge-unlocked {
+            border-color: #456b47;
+            color: #a6e3a1;
+        }
+
+        .badge-locked {
+            border-color: #313244;
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        /* -------------------------------------------------------------
+           IN-GAME API REFERENCE & CHEAT SHEET PANEL
+        ------------------------------------------------------------- */
+        .doc-panel {
+            background-color: #151521;
+            border: 1px solid #363a4f;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .doc-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--accent-purple);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .doc-toggle-btn {
+            background: transparent;
+            border: 1px solid #45475a;
+            color: var(--accent-blue);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .doc-body {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .doc-section {
+            background: #11111b;
+            border: 1px solid #313244;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        .doc-sec-title {
+            font-weight: bold;
+            color: var(--accent-gold);
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .api-tag {
+            font-family: 'Consolas', monospace;
+            background: #1e1e2e;
+            color: var(--accent-green);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #45475a;
+            font-size: 11.5px;
+            display: inline-block;
+            margin: 2px 2px 2px 0;
+        }
+
+        .api-desc {
+            color: var(--text-color);
+            margin-left: 4px;
+        }
+
+        /* -------------------------------------------------------------
+           CODE EDITOR & CONSOLE PANELS
+        ------------------------------------------------------------- */
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        #code-editor {
+            width: 100%;
+            min-height: 220px;
+            max-height: 320px;
+            background-color: #11111b;
+            color: var(--accent-green);
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.45;
+            resize: vertical;
+            outline: none;
+            tab-size: 4;
+        }
+
+        #code-editor:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .controls-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .big-btn {
+            height: 44px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        #btn-run { background-color: var(--accent-green); color: #11111b; }
+        #btn-run:disabled { background-color: #45475a; color: var(--text-muted); cursor: not-allowed; }
+
+        #btn-stop { background-color: var(--accent-red); color: #11111b; }
+        #btn-stop:disabled { background-color: #45475a; color: var(--text-muted); cursor: not-allowed; }
+
+        #console-panel {
+            height: 140px;
+            background-color: #11111b;
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            padding: 8px 12px;
+            overflow-y: auto;
+            font-size: 13px;
+            font-family: 'Consolas', monospace;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .log-line { margin: 0; word-break: break-all; }
+        .log-sys  { color: var(--text-muted); }
+        .log-cmd  { color: var(--accent-blue); }
+        .log-ok   { color: var(--accent-green); }
+        .log-warn { color: #f9e2af; }
+        .log-err  { color: var(--accent-red); font-weight: bold; }
+        .log-bonus { color: var(--accent-gold); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <h1>THE FARMER WAS CODER</h1>
+            <div class="save-controls">
+                <span id="save-status" class="save-indicator">💾 Auto-saved</span>
+                <button class="btn-reset-save" onclick="resetGame()" title="Reset all progress and start fresh">🔄 Reset Save</button>
+            </div>
+        </div>
+        
+        <div id="top-bar">
+            <!-- RESOURCE & CURRENCY BAR -->
+            <div id="resource-bar">
+                <div class="res-item coin-highlight" title="Coins for Grid Upgrades">
+                    <span class="res-icon">🪙</span> Coins: <span id="res-coins" class="res-val">0</span>
+                </div>
+                <div class="res-item grid-highlight" title="Current Platform Size">
+                    <span class="res-icon">📐</span> Grid: <span id="res-grid" class="res-val">1x1</span>
+                </div>
+                <div class="res-item" title="Harvested Hay">
+                    <span class="res-icon">🌾</span> Hay: <span id="res-hay" class="res-val">0</span>
+                </div>
+                <div class="res-item" title="Harvested Wood">
+                    <span class="res-icon">🪵</span> Wood: <span id="res-wood" class="res-val">0</span>
+                </div>
+                <div class="res-item" title="Harvested Carrots">
+                    <span class="res-icon">🥕</span> Carrot: <span id="res-carrot" class="res-val">0</span>
+                </div>
+                <div class="res-item" title="Harvested Pumpkins">
+                    <span class="res-icon">🎃</span> Pumpkin: <span id="res-pumpkin" class="res-val">0</span>
+                </div>
+                <div class="res-item" title="Harvested Sunflowers">
+                    <span class="res-icon">🌻</span> Sunflower: <span id="res-sunflower" class="res-val">0</span>
+                </div>
+                <div class="res-item" title="Accumulated Energy">
+                    <span class="res-icon">⚡</span> Power: <span id="res-power" class="res-val">0</span>
+                </div>
+            </div>
+
+            <div id="hud-status">
+                <div>Drone: <span id="hud-pos" style="color: var(--accent-blue); font-weight: bold;">(0, 0)</span></div>
+                <div>Tile: <span id="hud-tile" style="color: #cdd6f4;">Empty</span></div>
+                <div>Status: <span id="exec-status" style="color: var(--text-muted);">IDLE</span></div>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-container">
+        <!-- CODE EDITOR & API DOCUMENTATION SECTION -->
+        <section id="editor-section">
+            <!-- IN-GAME API REFERENCE / CHEAT SHEET PANEL -->
+            <div class="doc-panel">
+                <div class="doc-header" onclick="toggleDoc()">
+                    <span class="doc-title">📖 In-Game Python API Reference & Cheat Sheet</span>
+                    <button id="btn-toggle-doc" class="doc-toggle-btn">Hide</button>
+                </div>
+                <div id="doc-body" class="doc-body">
+                    <div style="color: var(--text-muted); font-size: 11.5px;">
+                        Write Python-style code below. The runner <b>loops continuously</b> until STOP is pressed.
+                    </div>
+
+                    <!-- 1. Movement -->
+                    <div class="doc-section">
+                        <div class="doc-sec-title">🧭 Drone Movement</div>
+                        <div>
+                            <span class="api-tag">move(North)</span>
+                            <span class="api-tag">move(East)</span>
+                            <span class="api-tag">move(South)</span>
+                            <span class="api-tag">move(West)</span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                            Aliases: <code>move_north()</code>, <code>move_east()</code>, <code>move_south()</code>, <code>move_west()</code>
+                        </div>
+                    </div>
+
+                    <!-- 2. Actions -->
+                    <div class="doc-section">
+                        <div class="doc-sec-title">🌱 Farm Actions</div>
+                        <div>
+                            <span class="api-tag">plant(Entities.Grass)</span>
+                            <span class="api-tag">plant(Entities.Bush)</span>
+                            <span class="api-tag">plant(Entities.Carrots)</span>
+                            <span class="api-tag">plant(Entities.Pumpkin)</span>
+                            <span class="api-tag">plant(Entities.Sunflower)</span>
+                        </div>
+                        <div style="margin-top: 4px;">
+                            <span class="api-tag">harvest()</span>
+                            <span class="api-desc">Gathers mature crops, earns Coins, & clears the tile.</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Sensors & Logic -->
+                    <div class="doc-section">
+                        <div class="doc-sec-title">🔍 Sensors & Conditions</div>
+                        <div>
+                            <span class="api-tag">can_harvest()</span>
+                            <span class="api-desc">Returns <code>True</code> if crop on current tile is mature.</span>
+                        </div>
+                        <div style="margin-top: 3px;">
+                            <span class="api-tag">get_pos_x()</span>
+                            <span class="api-tag">get_pos_y()</span>
+                            <span class="api-desc">Returns current drone coordinates.</span>
+                        </div>
+                        <div style="margin-top: 3px;">
+                            <span class="api-tag">get_ground_type()</span>
+                            <span class="api-desc">Returns ground status (e.g. <code>"soil"</code>).</span>
+                        </div>
+                        <div style="margin-top: 3px;">
+                            <span class="api-tag">measure()</span>
+                            <span class="api-desc">Returns petal count on sunflower tiles.</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Upgrades -->
+                    <div class="doc-section">
+                        <div class="doc-sec-title">🏗 Grid Expansion</div>
+                        <div>
+                            <span class="api-tag">expand_grid()</span> or <span class="api-tag">buy_upgrade()</span>
+                            <span class="api-desc">Upgrades platform dimension if you have enough Coins.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CODE EDITOR PANEL -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>CODE EDITOR (CONTINUOUS LOOP RUNNER)</span>
+                    <span style="font-size: 11px; color: var(--accent-blue);">Loops continuously</span>
+                </div>
+
+                <textarea id="code-editor" spellcheck="false"># Automated Python farming script
+# The script loops continuously like "while True:"
+if can_harvest():
+    harvest()
+
+plant(Entities.Grass)</textarea>
+
+                <div class="controls-row">
+                    <button id="btn-run" class="big-btn" onclick="runScript()">▶ START AUTOMATION</button>
+                    <button id="btn-stop" class="big-btn" onclick="stopScript()" disabled>⏹ STOP</button>
+                </div>
+            </div>
+
+            <!-- In-game Console Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>CONSOLE OUTPUT</span>
+                    <span style="cursor: pointer; color: var(--accent-blue);" onclick="clearConsole()">Clear</span>
+                </div>
+                <div id="console-panel"></div>
+            </div>
+        </section>
+
+        <!-- FARM GRID & PROGRESSION SECTION -->
+        <section id="grid-section">
+            <div id="canvas-box">
+                <canvas id="farmCanvas" width="500" height="500"></canvas>
+            </div>
+
+            <!-- EXPANSION & TECH UNLOCKS PANEL -->
+            <div class="info-panel">
+                <!-- Platform Expansion -->
+                <div class="panel-heading">
+                    <span>🏗 PLATFORM EXPANSION</span>
+                    <span id="tier-label" style="color: var(--text-muted); font-size: 11px;">Tier 1</span>
+                </div>
+                <div class="expansion-card">
+                    <div class="expansion-info">
+                        <div>Next Size: <b id="next-grid-size" style="color: var(--accent-blue);">2x2</b></div>
+                        <div id="tier-unlock-desc" style="font-size: 11px; color: var(--accent-green);">Unlocks: 🪵 Bush/Wood</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Cost: <span id="upgrade-cost" style="color: var(--accent-gold); font-weight: bold;">20</span> Coins</div>
+                    </div>
+                    <button id="btn-upgrade-grid" class="btn-upgrade" onclick="buyGridUpgrade()">⬆ Upgrade Platform</button>
+                </div>
+
+                <!-- Unlocked Crops Status -->
+                <div class="panel-heading" style="margin-top: 6px;">
+                    <span>🌱 UNLOCKED CROPS (UNLIMITED SEEDS)</span>
+                </div>
+                <div class="unlocks-grid">
+                    <div id="badge-grass" class="unlock-badge badge-unlocked">
+                        <span>🌱 Grass</span> <span>✔ Ready</span>
+                    </div>
+                    <div id="badge-wood" class="unlock-badge badge-locked">
+                        <span>🪵 Bush</span> <span id="lock-wood">🔒 2x2</span>
+                    </div>
+                    <div id="badge-carrot" class="unlock-badge badge-locked">
+                        <span>🥕 Carrot</span> <span id="lock-carrot">🔒 3x3</span>
+                    </div>
+                    <div id="badge-pumpkin" class="unlock-badge badge-locked">
+                        <span>🎃 Pumpkin</span> <span id="lock-pumpkin">🔒 4x4</span>
+                    </div>
+                    <div id="badge-sunflower" class="unlock-badge badge-locked">
+                        <span>🌻 Sunflower</span> <span id="lock-sunflower">🔒 6x6</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                Inspect coordinates via click/tap. Write commands in the editor using the Python API reference above.
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById("farmCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // UI references
+        const elCoins = document.getElementById("res-coins");
+        const elGrid = document.getElementById("res-grid");
+        const elHay = document.getElementById("res-hay");
+        const elWood = document.getElementById("res-wood");
+        const elCarrot = document.getElementById("res-carrot");
+        const elPumpkin = document.getElementById("res-pumpkin");
+        const elSunflower = document.getElementById("res-sunflower");
+        const elPower = document.getElementById("res-power");
+
+        const hudPos = document.getElementById("hud-pos");
+        const hudTile = document.getElementById("hud-tile");
+        const execStatus = document.getElementById("exec-status");
+        const consolePanel = document.getElementById("console-panel");
+        const codeEditor = document.getElementById("code-editor");
+        const btnRun = document.getElementById("btn-run");
+        const btnStop = document.getElementById("btn-stop");
+        const saveStatus = document.getElementById("save-status");
+
+        const btnUpgradeGrid = document.getElementById("btn-upgrade-grid");
+        const nextGridSizeLabel = document.getElementById("next-grid-size");
+        const tierUnlockDesc = document.getElementById("tier-unlock-desc");
+        const upgradeCostLabel = document.getElementById("upgrade-cost");
+        const tierLabel = document.getElementById("tier-label");
+
+        const docBody = document.getElementById("doc-body");
+        const btnToggleDoc = document.getElementById("btn-toggle-doc");
+
+        // Unlock badges
+        const badges = {
+            grass: document.getElementById("badge-grass"),
+            wood: document.getElementById("badge-wood"),
+            carrot: document.getElementById("badge-carrot"),
+            pumpkin: document.getElementById("badge-pumpkin"),
+            sunflower: document.getElementById("badge-sunflower")
+        };
+
+        // -------------------------------------------------------------
+        // SAVE & LOAD STORAGE (LocalStorage Persistence)
+        // -------------------------------------------------------------
+        const SAVE_STORAGE_KEY = "TFWR_GAME_SAVE_V4";
+
+        let coins = 0;
+        let currentTierIndex = 0; // Starts at 1x1
+
+        // Grid expansion tiers and what crop each tier unlocks
+        const GRID_EXPANSION_TIERS = [
+            { size: 1,  cost: 0,     unlocks: "grass",     unlockText: "🌱 Grass (Default)" },
+            { size: 2,  cost: 20,    unlocks: "wood",      unlockText: "🪵 Bush / Wood" },
+            { size: 3,  cost: 60,    unlocks: "carrot",    unlockText: "🥕 Carrot" },
+            { size: 4,  cost: 150,   unlocks: "pumpkin",   unlockText: "🎃 Pumpkin (2x2 Giant)" },
+            { size: 6,  cost: 400,   unlocks: "sunflower", unlockText: "🌻 Sunflower (Petal Power)" },
+            { size: 8,  cost: 1000,  unlocks: null,        unlockText: "Platform Expansion" },
+            { size: 12, cost: 2500,  unlocks: null,        unlockText: "Platform Expansion" },
+            { size: 16, cost: 6000,  unlocks: null,        unlockText: "Platform Expansion" },
+            { size: 24, cost: 15000, unlocks: null,        unlockText: "Platform Expansion" },
+            { size: 32, cost: 40000, unlocks: null,        unlockText: "Maximum Grid Dimension" }
+        ];
+
+        let GRID_SIZE = GRID_EXPANSION_TIERS[currentTierIndex].size; // 1x1
+
+        // Harvested Resource Storage
+        let inventory = {
+            hay: 0,
+            wood: 0,
+            carrot: 0,
+            pumpkin: 0,
+            sunflower: 0,
+            power: 0
+        };
+
+        let stats = {
+            totalHarvests: 0,
+            totalCoinsEarned: 0
+        };
+
+        // Crop Properties (Seeds are UNLIMITED once unlocked)
+        const CROP_CONFIG = {
+            grass: {
+                name: "Grass",
+                produce: "hay",
+                requiredTierIndex: 0,
+                growthDuration: 1500,
+                coinReward: 5,
+                yield: 1,
+                color: "#4caf50"
+            },
+            wood: {
+                name: "Bush",
+                produce: "wood",
+                requiredTierIndex: 1,
+                growthDuration: 3500,
+                coinReward: 15,
+                yield: 1,
+                color: "#2e7d32"
+            },
+            carrot: {
+                name: "Carrot",
+                produce: "carrot",
+                requiredTierIndex: 2,
+                growthDuration: 2800,
+                coinReward: 35,
+                yield: 2,
+                color: "#ff9800"
+            },
+            pumpkin: {
+                name: "Pumpkin",
+                produce: "pumpkin",
+                requiredTierIndex: 3,
+                growthDuration: 4200,
+                coinReward: 80,
+                yield: 1,
+                color: "#ff6f00"
+            },
+            sunflower: {
+                name: "Sunflower",
+                produce: "sunflower",
+                requiredTierIndex: 4,
+                growthDuration: 3500,
+                coinReward: 120,
+                yield: 1,
+                color: "#ffd54f"
+            }
+        };
+
+        // -------------------------------------------------------------
+        // DYNAMIC GRID INITIALIZATION
+        // -------------------------------------------------------------
+        let tiles = [];
+
+        function initTilesForSize(newSize) {
+            const newTiles = [];
+            for (let y = 0; y < newSize; y++) {
+                const row = [];
+                for (let x = 0; x < newSize; x++) {
+                    if (tiles[y] && tiles[y][x]) {
+                        row.push(tiles[y][x]);
+                    } else {
+                        row.push({
+                            state: 'EMPTY',
+                            crop: null,
+                            plantedAt: 0,
+                            petals: 0,
+                            giantRoot: null
+                        });
+                    }
+                }
+                newTiles.push(row);
+            }
+            tiles = newTiles;
+            GRID_SIZE = newSize;
+
+            drone.x = Math.min(drone.x, GRID_SIZE - 1);
+            drone.y = Math.min(drone.y, GRID_SIZE - 1);
+
+            updateHUD();
+        }
+
+        const drone = { x: 0, y: 0 };
+        const STEP_DELAY_MS = 300;
+        let isRunning = false;
+        let stopRequested = false;
+
+        // -------------------------------------------------------------
+        // PERSISTENCE ENGINE (LocalStorage)
+        // -------------------------------------------------------------
+        function saveGame() {
+            try {
+                const serializedTiles = tiles.map(row => 
+                    row.map(t => ({
+                        state: t.state,
+                        crop: t.crop,
+                        petals: t.petals,
+                        giantRoot: t.giantRoot,
+                        elapsed: t.state === 'GROWING' ? Math.max(0, performance.now() - t.plantedAt) : 0
+                    }))
+                );
+
+                const data = {
+                    coins,
+                    currentTierIndex,
+                    inventory,
+                    stats,
+                    savedCode: codeEditor.value,
+                    serializedTiles,
+                    timestamp: Date.now()
+                };
+
+                localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(data));
+                flashSaveIndicator();
+            } catch (err) {
+                console.error("Auto-save failed:", err);
+            }
+        }
+
+        function loadGame() {
+            try {
+                const raw = localStorage.getItem(SAVE_STORAGE_KEY);
+                if (!raw) {
+                    initTilesForSize(GRID_SIZE);
+                    return false;
+                }
+
+                const data = JSON.parse(raw);
+
+                if (typeof data.coins === 'number') coins = data.coins;
+                if (typeof data.currentTierIndex === 'number') {
+                    currentTierIndex = Math.min(data.currentTierIndex, GRID_EXPANSION_TIERS.length - 1);
+                }
+                if (data.inventory) inventory = Object.assign(inventory, data.inventory);
+                if (data.stats) stats = Object.assign(stats, data.stats);
+                if (data.savedCode) codeEditor.value = data.savedCode;
+
+                const targetSize = GRID_EXPANSION_TIERS[currentTierIndex].size;
+                initTilesForSize(targetSize);
+
+                if (data.serializedTiles && data.serializedTiles.length === targetSize) {
+                    const now = performance.now();
+                    for (let y = 0; y < targetSize; y++) {
+                        for (let x = 0; x < targetSize; x++) {
+                            const savedT = data.serializedTiles[y][x];
+                            if (savedT) {
+                                tiles[y][x].state = savedT.state;
+                                tiles[y][x].crop = savedT.crop;
+                                tiles[y][x].petals = savedT.petals;
+                                tiles[y][x].giantRoot = savedT.giantRoot;
+                                tiles[y][x].plantedAt = now - (savedT.elapsed || 0);
+                            }
+                        }
+                    }
+                }
+
+                updateHUD();
+                log("Progress loaded seamlessly from local storage!", "ok");
+                return true;
+            } catch (err) {
+                console.error("Load save failed:", err);
+                initTilesForSize(GRID_SIZE);
+                return false;
+            }
+        }
+
+        function resetGame() {
+            if (confirm("Reset all game progress? This will revert the platform back to 1x1, clear all coins, and reset inventory.")) {
+                stopScript();
+                localStorage.removeItem(SAVE_STORAGE_KEY);
+                location.reload();
+            }
+        }
+
+        let saveTimeout = null;
+        function flashSaveIndicator() {
+            saveStatus.textContent = "💾 Auto-saved";
+            saveStatus.style.color = "var(--accent-green)";
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveStatus.style.color = "var(--text-muted)";
+            }, 1200);
+        }
+
+        codeEditor.addEventListener("input", () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveGame, 800);
+        });
+
+        setInterval(saveGame, 4000);
+
+        // -------------------------------------------------------------
+        // UI & CHEAT SHEET TOGGLE
+        // -------------------------------------------------------------
+        function toggleDoc() {
+            if (docBody.style.display === "none") {
+                docBody.style.display = "flex";
+                btnToggleDoc.textContent = "Hide";
+            } else {
+                docBody.style.display = "none";
+                btnToggleDoc.textContent = "Show";
+            }
+        }
+
+        // -------------------------------------------------------------
+        // LOGGING & HUD
+        // -------------------------------------------------------------
+        function log(msg, type = "sys") {
+            const el = document.createElement("div");
+            el.className = `log-line log-${type}`;
+            el.textContent = msg;
+            consolePanel.appendChild(el);
+            consolePanel.scrollTop = consolePanel.scrollHeight;
+        }
+
+        function clearConsole() {
+            consolePanel.innerHTML = "";
+            log("Console cleared.", "sys");
+        }
+
+        function isCropUnlocked(cropKey) {
+            const cfg = CROP_CONFIG[cropKey];
+            return cfg && currentTierIndex >= cfg.requiredTierIndex;
+        }
+
+        function updateHUD() {
+            elCoins.textContent = coins;
+            elGrid.textContent = `${GRID_SIZE}x${GRID_SIZE}`;
+            elHay.textContent = inventory.hay;
+            elWood.textContent = inventory.wood;
+            elCarrot.textContent = inventory.carrot;
+            elPumpkin.textContent = inventory.pumpkin;
+            elSunflower.textContent = inventory.sunflower;
+            elPower.textContent = inventory.power;
+
+            for (const key in badges) {
+                const badge = badges[key];
+                if (isCropUnlocked(key)) {
+                    badge.className = "unlock-badge badge-unlocked";
+                    badge.querySelector("span:last-child").textContent = "✔ Unlocked";
+                } else {
+                    badge.className = "unlock-badge badge-locked";
+                }
+            }
+
+            const nextTier = GRID_EXPANSION_TIERS[currentTierIndex + 1];
+            if (nextTier) {
+                nextGridSizeLabel.textContent = `${nextTier.size}x${nextTier.size}`;
+                tierUnlockDesc.textContent = `Unlocks: ${nextTier.unlockText}`;
+                upgradeCostLabel.textContent = nextTier.cost;
+                tierLabel.textContent = `Tier ${currentTierIndex + 1}/${GRID_EXPANSION_TIERS.length}`;
+                btnUpgradeGrid.disabled = coins < nextTier.cost;
+            } else {
+                nextGridSizeLabel.textContent = "MAX (32x32)";
+                tierUnlockDesc.textContent = "All Tiers Unlocked";
+                upgradeCostLabel.textContent = "—";
+                tierLabel.textContent = "MAX TIER";
+                btnUpgradeGrid.disabled = true;
+                btnUpgradeGrid.textContent = "✔ Fully Upgraded";
+            }
+
+            hudPos.textContent = `(${drone.x}, ${drone.y})`;
+
+            const cur = tiles[drone.y] ? tiles[drone.y][drone.x] : null;
+            if (!cur || cur.state === 'EMPTY') {
+                hudTile.textContent = 'Empty Soil';
+                hudTile.style.color = '#a6adc8';
+            } else if (cur.state === 'GROWING') {
+                hudTile.textContent = `${CROP_CONFIG[cur.crop].name} (Growing...)`;
+                hudTile.style.color = '#a6e3a1';
+            } else if (cur.state === 'GROWN') {
+                if (cur.giantRoot) {
+                    hudTile.textContent = '🎃 GIANT PUMPKIN! (2x2)';
+                    hudTile.style.color = '#ffd700';
+                } else if (cur.crop === 'sunflower') {
+                    hudTile.textContent = `🌻 Sunflower (${cur.petals} petals)`;
+                    hudTile.style.color = '#ffd700';
+                } else {
+                    hudTile.textContent = `${CROP_CONFIG[cur.crop].name} (Ready!)`;
+                    hudTile.style.color = '#ffd700';
+                }
+            }
+        }
+
+        const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+        // -------------------------------------------------------------
+        // PLATFORM UPGRADE
+        // -------------------------------------------------------------
+        function buyGridUpgrade() {
+            const nextTier = GRID_EXPANSION_TIERS[currentTierIndex + 1];
+            if (!nextTier) {
+                log("Platform is already at maximum dimensions (32x32)!", "warn");
+                return false;
+            }
+
+            if (coins >= nextTier.cost) {
+                coins -= nextTier.cost;
+                currentTierIndex++;
+                initTilesForSize(nextTier.size);
+                log(`🎉 PLATFORM UPGRADE! Farm expanded to ${nextTier.size}x${nextTier.size}! (-${nextTier.cost} 🪙)`, "bonus");
+                if (nextTier.unlocks) {
+                    log(`✨ New Crop Unlocked: ${CROP_CONFIG[nextTier.unlocks].name}! (Unlimited seeds)`, "ok");
+                }
+                updateHUD();
+                saveGame();
+                return true;
+            } else {
+                log(`⚠ Not enough Coins to expand! (Required: ${nextTier.cost}🪙, Available: ${coins}🪙)`, "warn");
+                return false;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // DRONE ACTIONS & PYTHONIC API
+        // -------------------------------------------------------------
+        function move(dx, dy) {
+            drone.x = (drone.x + dx + GRID_SIZE) % GRID_SIZE;
+            drone.y = (drone.y + dy + GRID_SIZE) % GRID_SIZE;
+            updateHUD();
+        }
+
+        function moveTo(tx, ty) {
+            drone.x = Math.max(0, Math.min(GRID_SIZE - 1, tx));
+            drone.y = Math.max(0, Math.min(GRID_SIZE - 1, ty));
+            updateHUD();
+        }
+
+        // Entity alias normalizer: "Entities.Grass" / "Entities.Carrots" -> "grass" / "carrot"
+        function resolveEntity(rawEntity) {
+            const cleaned = rawEntity.replace(/^Entities\./i, "").trim().toLowerCase();
+            if (cleaned === "carrots" || cleaned === "carrot") return "carrot";
+            if (cleaned === "bush" || cleaned === "wood") return "wood";
+            if (cleaned === "grass" || cleaned === "hay") return "grass";
+            if (cleaned === "pumpkin" || cleaned === "pumpkins") return "pumpkin";
+            if (cleaned === "sunflower" || cleaned === "sunflowers") return "sunflower";
+            return cleaned;
+        }
+
+        function plantCrop(type = "grass") {
+            const cropKey = resolveEntity(type);
+            const config = CROP_CONFIG[cropKey];
+
+            if (!config) {
+                return { success: false, reason: `Unknown crop entity: "${type}"` };
+            }
+
+            if (!isCropUnlocked(cropKey)) {
+                const reqTier = GRID_EXPANSION_TIERS[config.requiredTierIndex];
+                return { 
+                    success: false, 
+                    reason: `${config.name} is locked! Expand platform to ${reqTier.size}x${reqTier.size} to unlock.` 
+                };
+            }
+
+            const tile = tiles[drone.y][drone.x];
+            if (tile.state !== 'EMPTY') {
+                return { success: false, reason: `Tile (${drone.x}, ${drone.y}) is already occupied!` };
+            }
+
+            tile.state = 'GROWING';
+            tile.crop = cropKey;
+            tile.plantedAt = performance.now();
+            tile.petals = (cropKey === 'sunflower') ? (Math.floor(Math.random() * 9) + 7) : 0;
+            tile.giantRoot = null;
+
+            updateHUD();
+            return { success: true, crop: config.name };
+        }
+
+        function harvestCrop() {
+            const tile = tiles[drone.y][drone.x];
+
+            if (tile.state !== 'GROWN') {
+                if (tile.state === 'GROWING') {
+                    return { success: false, reason: `${CROP_CONFIG[tile.crop].name} is still growing.` };
+                }
+                return { success: false, reason: `Nothing to harvest at (${drone.x}, ${drone.y}).` };
+            }
+
+            stats.totalHarvests++;
+
+            // 1. GIANT PUMPKIN HARVEST (2x2)
+            if (tile.giantRoot) {
+                const { rx, ry } = tile.giantRoot;
+                const giantYield = 20;
+                const giantCoinReward = 600;
+
+                inventory.pumpkin += giantYield;
+                coins += giantCoinReward;
+                stats.totalCoinsEarned += giantCoinReward;
+
+                for (let dy = 0; dy < 2; dy++) {
+                    for (let dx = 0; dx < 2; dx++) {
+                        const t = tiles[ry + dy][rx + dx];
+                        t.state = 'EMPTY';
+                        t.crop = null;
+                        t.giantRoot = null;
+                        t.plantedAt = 0;
+                    }
+                }
+
+                updateHUD();
+                saveGame();
+                return { 
+                    success: true, 
+                    type: "giant",
+                    message: `★ GIANT PUMPKIN HARVESTED! (+${giantYield} Pumpkins, +${giantCoinReward} 🪙 Coins!)` 
+                };
+            }
+
+            // 2. SUNFLOWER HARVEST
+            if (tile.crop === 'sunflower') {
+                const petals = tile.petals;
+                const gainedPower = petals * 4;
+                const coinReward = CROP_CONFIG.sunflower.coinReward;
+
+                inventory.sunflower += 1;
+                inventory.power += gainedPower;
+                coins += coinReward;
+                stats.totalCoinsEarned += coinReward;
+
+                let maxPetalsOnFarm = 0;
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        if (tiles[y][x].crop === 'sunflower' && tiles[y][x].state === 'GROWN') {
+                            maxPetalsOnFarm = Math.max(maxPetalsOnFarm, tiles[y][x].petals);
+                        }
+                    }
+                }
+
+                let bonusCoins = 0;
+                if (petals >= maxPetalsOnFarm && petals >= 12) {
+                    bonusCoins = 50;
+                    coins += bonusCoins;
+                    stats.totalCoinsEarned += bonusCoins;
+                }
+
+                tile.state = 'EMPTY';
+                tile.crop = null;
+                tile.plantedAt = 0;
+                tile.petals = 0;
+
+                updateHUD();
+                saveGame();
+                let msg = `🌻 Sunflower (${petals} petals) -> +1 Sunflower, +${gainedPower} Power, +${coinReward + bonusCoins} 🪙 Coins!`;
+                return { success: true, type: "sunflower", message: msg };
+            }
+
+            // 3. REGULAR CROP HARVEST
+            const config = CROP_CONFIG[tile.crop];
+            inventory[config.produce] += config.yield;
+            coins += config.coinReward;
+            stats.totalCoinsEarned += config.coinReward;
+
+            const harvestedName = config.name;
+            const yieldAmount = config.yield;
+            const earnedCoins = config.coinReward;
+
+            tile.state = 'EMPTY';
+            tile.crop = null;
+            tile.plantedAt = 0;
+
+            updateHUD();
+            saveGame();
+            return { 
+                success: true, 
+                message: `🌾 Harvested ${harvestedName}! (+${yieldAmount} ${config.produce}, +${earnedCoins} 🪙 Coins)` 
+            };
+        }
+
+        // Logic & Sensing APIs
+        function can_harvest() {
+            const tile = tiles[drone.y][drone.x];
+            return tile && tile.state === 'GROWN';
+        }
+
+        function get_pos_x() { return drone.x; }
+        function get_pos_y() { return drone.y; }
+        function get_ground_type() { return "soil"; }
+        function measure() {
+            const tile = tiles[drone.y][drone.x];
+            return tile ? (tile.petals || 0) : 0;
+        }
+
+        // -------------------------------------------------------------
+        // GIANT PUMPKIN CLUSTERING (2x2)
+        // -------------------------------------------------------------
+        function checkGiantPumpkins() {
+            if (GRID_SIZE < 2) return;
+
+            for (let y = 0; y < GRID_SIZE - 1; y++) {
+                for (let x = 0; x < GRID_SIZE - 1; x++) {
+                    const t00 = tiles[y][x];
+                    const t10 = tiles[y][x + 1];
+                    const t01 = tiles[y + 1][x];
+                    const t11 = tiles[y + 1][x + 1];
+
+                    if (
+                        t00.crop === 'pumpkin' && t00.state === 'GROWN' && !t00.giantRoot &&
+                        t10.crop === 'pumpkin' && t10.state === 'GROWN' && !t10.giantRoot &&
+                        t01.crop === 'pumpkin' && t01.state === 'GROWN' && !t01.giantRoot &&
+                        t11.crop === 'pumpkin' && t11.state === 'GROWN' && !t11.giantRoot
+                    ) {
+                        const root = { rx: x, ry: y };
+                        t00.giantRoot = root;
+                        t10.giantRoot = root;
+                        t01.giantRoot = root;
+                        t11.giantRoot = root;
+                        log(`✨ COMBINE! Formed a 2x2 Giant Pumpkin at (${x}, ${y})!`, "bonus");
+                        saveGame();
+                    }
+                }
+            }
+        }
+
+        // -------------------------------------------------------------
+        // TILE CLICK / TOUCH INSPECT
+        // -------------------------------------------------------------
+        function handlePointer(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+
+            const tileSize = canvas.width / GRID_SIZE;
+            const tx = Math.floor(canvasX / tileSize);
+            const ty = Math.floor(canvasY / tileSize);
+
+            if (tx >= 0 && tx < GRID_SIZE && ty >= 0 && ty < GRID_SIZE) {
+                moveTo(tx, ty);
+                log(`Target coordinate inspected: (${tx}, ${ty})`, "cmd");
+            }
+        }
+
+        canvas.addEventListener("click", handlePointer);
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            handlePointer(e);
+        }, { passive: false });
+
+        // -------------------------------------------------------------
+        // PYTHONIC SCRIPT RUNNER & PARSER
+        // -------------------------------------------------------------
+        async function runScript() {
+            if (isRunning) return;
+
+            isRunning = true;
+            stopRequested = false;
+            btnRun.disabled = true;
+            btnStop.disabled = false;
+            execStatus.textContent = "RUNNING (LOOP)";
+            execStatus.style.color = "var(--accent-green)";
+
+            log("--- Automation Loop Started (Continuous Execution) ---", "sys");
+
+            while (!stopRequested) {
+                const rawLines = codeEditor.value.split("\n");
+                let executedAny = false;
+
+                for (let i = 0; i < rawLines.length; i++) {
+                    if (stopRequested) break;
+
+                    let raw = rawLines[i].trim();
+                    if (!raw || raw.startsWith("#") || raw.startsWith("//")) continue;
+
+                    executedAny = true;
+                    let valid = true;
+                    let stepDesc = "";
+
+                    // Simple conditional: if can_harvest(): harvest()
+                    if (raw.startsWith("if can_harvest") || raw.startsWith("if can_harvest():")) {
+                        const parts = raw.split(":");
+                        if (can_harvest()) {
+                            if (parts.length > 1 && parts[1].trim()) {
+                                raw = parts[1].trim(); // Execute right hand side statement
+                            } else {
+                                continue;
+                            }
+                        } else {
+                            // Condition false, skip
+                            continue;
+                        }
+                    }
+
+                    // 1. Matches: plant(Entities.Grass), plant("Carrots"), plant(Grass)
+                    const plantMatch = raw.match(/^plant\s*\(\s*(?:Entities\.)?["']?(\w+)["']?\s*\)$/i);
+                    // 2. Matches: move(North), move(Directions.East)
+                    const moveMatch = raw.match(/^move\s*\(\s*(?:Directions\.)?["']?(\w+)["']?\s*\)$/i);
+
+                    if (plantMatch) {
+                        const res = plantCrop(plantMatch[1]);
+                        if (res.success) {
+                            stepDesc = `Planted ${res.crop} at (${drone.x}, ${drone.y})`;
+                        } else {
+                            log(`[Line ${i+1}] ⚠ ${res.reason}`, "warn");
+                        }
+                    } else if (moveMatch) {
+                        const dir = moveMatch[1].toLowerCase();
+                        if (dir === "north") { move(0, -1); stepDesc = `Moved North -> (${drone.x}, ${drone.y})`; }
+                        else if (dir === "south") { move(0, 1); stepDesc = `Moved South -> (${drone.x}, ${drone.y})`; }
+                        else if (dir === "east") { move(1, 0); stepDesc = `Moved East -> (${drone.x}, ${drone.y})`; }
+                        else if (dir === "west") { move(-1, 0); stepDesc = `Moved West -> (${drone.x}, ${drone.y})`; }
+                        else {
+                            valid = false;
+                            log(`[Line ${i+1}] ❌ Unknown direction: "${moveMatch[1]}"`, "err");
+                        }
+                    } else {
+                        const norm = raw.toLowerCase().replace(/[\(\)]/g, "");
+
+                        switch (norm) {
+                            case "move_north":
+                            case "north":
+                                move(0, -1);
+                                stepDesc = `Moved North -> (${drone.x}, ${drone.y})`;
+                                break;
+                            case "move_south":
+                            case "south":
+                                move(0, 1);
+                                stepDesc = `Moved South -> (${drone.x}, ${drone.y})`;
+                                break;
+                            case "move_east":
+                            case "east":
+                                move(1, 0);
+                                stepDesc = `Moved East -> (${drone.x}, ${drone.y})`;
+                                break;
+                            case "move_west":
+                            case "west":
+                                move(-1, 0);
+                                stepDesc = `Moved West -> (${drone.x}, ${drone.y})`;
+                                break;
+                            case "harvest":
+                                const hRes = harvestCrop();
+                                if (hRes.success) {
+                                    log(hRes.message, hRes.type === "giant" ? "bonus" : "ok");
+                                } else {
+                                    log(`[Line ${i+1}] Notice: ${hRes.reason}`, "sys");
+                                }
+                                break;
+                            case "expand":
+                            case "expand_grid":
+                            case "buy_upgrade":
+                            case "upgrade_grid":
+                                const expOk = buyGridUpgrade();
+                                stepDesc = expOk ? `Platform upgraded to ${GRID_SIZE}x${GRID_SIZE}` : `Platform expansion attempted`;
+                                break;
+                            case "pass":
+                                stepDesc = `Pass`;
+                                break;
+                            default:
+                                valid = false;
+                                log(`[Line ${i+1}] ❌ Unknown Python command: "${raw}". Check API Reference above.`, "err");
+                                break;
+                        }
+                    }
+
+                    if (!valid) {
+                        log("Automation halted due to syntax error.", "err");
+                        stopRequested = true;
+                        break;
+                    }
+
+                    if (stepDesc) log(`[Line ${i+1}] ${stepDesc}`, "cmd");
+                    await sleep(STEP_DELAY_MS);
+                }
+
+                if (!executedAny) {
+                    log("No commands found in editor to run.", "warn");
+                    break;
+                }
+
+                if (!stopRequested) {
+                    await sleep(60);
+                }
+            }
+
+            isRunning = false;
+            btnRun.disabled = false;
+            btnStop.disabled = true;
+            execStatus.textContent = "IDLE";
+            execStatus.style.color = "var(--text-muted)";
+            log("--- Automation Loop Stopped ---", "sys");
+        }
+
+        function stopScript() {
+            if (isRunning) stopRequested = true;
+        }
+
+        // -------------------------------------------------------------
+        // GRAPHICS & RENDER LOOP (Scales dynamically from 1x1 to 32x32)
+        // -------------------------------------------------------------
+        function loop(timestamp) {
+            const tileSize = canvas.width / GRID_SIZE;
+
+            // 1. Advance Growth Timers
+            let anyMatured = false;
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const t = tiles[y][x];
+                    if (t.state === 'GROWING') {
+                        const duration = CROP_CONFIG[t.crop].growthDuration;
+                        if (timestamp - t.plantedAt >= duration) {
+                            t.state = 'GROWN';
+                            anyMatured = true;
+                        }
+                    }
+                }
+            }
+
+            if (anyMatured) {
+                checkGiantPumpkins();
+                updateHUD();
+            }
+
+            // 2. Draw Farm Platform
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const drawnGiants = new Set();
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const t = tiles[y][x];
+                    const px = x * tileSize;
+                    const py = y * tileSize;
+
+                    // Tilled Soil Ground
+                    ctx.fillStyle = '#4a2f1b';
+                    ctx.fillRect(px, py, tileSize, tileSize);
+
+                    ctx.strokeStyle = '#2d1b0e';
+                    ctx.lineWidth = Math.max(1, 4 / Math.sqrt(GRID_SIZE));
+                    ctx.strokeRect(px, py, tileSize, tileSize);
+
+                    if (t.giantRoot) continue;
+
+                    // Individual Crops
+                    if (t.state === 'GROWING') {
+                        const prog = Math.min(1, (timestamp - t.plantedAt) / CROP_CONFIG[t.crop].growthDuration);
+                        const radius = Math.max(2, (tileSize * 0.15) + (prog * tileSize * 0.15));
+                        ctx.fillStyle = "#81c784";
+                        ctx.beginPath();
+                        ctx.arc(px + tileSize / 2, py + tileSize / 2, radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (t.state === 'GROWN') {
+                        drawCropVisual(ctx, t.crop, px, py, tileSize, t.petals);
+                    }
+                }
+            }
+
+            // 3. Draw Combined 2x2 Giant Pumpkins
+            if (GRID_SIZE >= 2) {
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        const t = tiles[y][x];
+                        if (t.giantRoot && !drawnGiants.has(`${t.giantRoot.rx},${t.giantRoot.ry}`)) {
+                            const { rx, ry } = t.giantRoot;
+                            drawnGiants.add(`${rx},${ry}`);
+                            drawGiantPumpkin(ctx, rx * tileSize, ry * tileSize, tileSize * 2);
+                        }
+                    }
+                }
+            }
+
+            // 4. Draw Drone Reticle (Proportional to current Tile Size)
+            const dpx = drone.x * tileSize;
+            const dpy = drone.y * tileSize;
+            const pad = Math.max(2, tileSize * 0.08);
+
+            ctx.fillStyle = "rgba(56, 189, 248, 0.55)";
+            ctx.fillRect(dpx + pad, dpy + pad, tileSize - (pad * 2), tileSize - (pad * 2));
+
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = Math.max(1.5, 4 / Math.sqrt(GRID_SIZE));
+            ctx.strokeRect(dpx + pad, dpy + pad, tileSize - (pad * 2), tileSize - (pad * 2));
+
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(dpx + tileSize / 2, dpy + tileSize / 2, Math.max(2, tileSize * 0.08), 0, Math.PI * 2);
+            ctx.fill();
+
+            requestAnimationFrame(loop);
+        }
+
+        // Scaled drawing of mature crops
+        function drawCropVisual(ctx, crop, px, py, sz, petals) {
+            const cx = px + sz / 2;
+            const cy = py + sz / 2;
+            const r = sz * 0.35;
+
+            switch (crop) {
+                case 'grass':
+                    ctx.fillStyle = "#8bc34a";
+                    ctx.fillRect(cx - (sz * 0.08), cy - (sz * 0.25), sz * 0.16, sz * 0.5);
+                    ctx.fillRect(cx - (sz * 0.25), cy - (sz * 0.08), sz * 0.5, sz * 0.16);
+                    break;
+
+                case 'wood':
+                    ctx.fillStyle = "#795548";
+                    ctx.fillRect(cx - (sz * 0.08), cy, sz * 0.16, sz * 0.3);
+                    ctx.fillStyle = "#2e7d32";
+                    ctx.beginPath();
+                    ctx.arc(cx, cy - (sz * 0.08), r, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'carrot':
+                    ctx.fillStyle = "#4caf50";
+                    ctx.fillRect(cx - (sz * 0.06), cy - (sz * 0.35), sz * 0.12, sz * 0.18);
+                    ctx.fillStyle = "#ff9800";
+                    ctx.beginPath();
+                    ctx.moveTo(cx - (sz * 0.2), cy - (sz * 0.18));
+                    ctx.lineTo(cx + (sz * 0.2), cy - (sz * 0.18));
+                    ctx.lineTo(cx, cy + (sz * 0.3));
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+
+                case 'pumpkin':
+                    ctx.fillStyle = "#ff6f00";
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = "#2e7d32";
+                    ctx.fillRect(cx - (sz * 0.06), cy - (sz * 0.4), sz * 0.12, sz * 0.15);
+                    break;
+
+                case 'sunflower':
+                    ctx.fillStyle = "#ffd54f";
+                    for (let i = 0; i < 8; i++) {
+                        const ang = (i * Math.PI) / 4;
+                        ctx.beginPath();
+                        ctx.arc(cx + Math.cos(ang) * (r * 0.8), cy + Math.sin(ang) * (r * 0.8), r * 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.fillStyle = "#5d4037";
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (sz >= 25) {
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = `bold ${Math.max(9, sz * 0.22)}px monospace`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(petals, cx, cy);
+                    }
+                    break;
+            }
+        }
+
+        // Draw 2x2 Giant Pumpkin
+        function drawGiantPumpkin(ctx, px, py, sz) {
+            const cx = px + sz / 2;
+            const cy = py + sz / 2;
+
+            ctx.fillStyle = "rgba(255, 111, 0, 0.25)";
+            ctx.beginPath();
+            ctx.arc(cx, cy, sz / 2 - 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#ff6f00";
+            ctx.beginPath();
+            ctx.arc(cx, cy, sz / 2 - 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#e65100";
+            ctx.beginPath();
+            ctx.arc(cx, cy, sz / 2 - 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#2e7d32";
+            ctx.fillRect(cx - (sz * 0.05), cy - (sz / 2 - 2), sz * 0.1, sz * 0.15);
+
+            if (sz >= 30) {
+                ctx.fillStyle = "#ffd700";
+                ctx.font = `bold ${Math.max(10, sz * 0.14)}px monospace`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("★ 2x2 ★", cx, cy);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // SERVICE WORKER REGISTRATION (Offline & Installable PWA)
+        // -------------------------------------------------------------
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('PWA ServiceWorker registered with scope:', reg.scope))
+                    .catch(err => console.warn('ServiceWorker registration error:', err));
+            });
+        }
+
+        // -------------------------------------------------------------
+        // INITIALIZATION
+        // -------------------------------------------------------------
+        const hasLoaded = loadGame();
+        if (!hasLoaded) {
+            log("Welcome to The Farmer Was Coder - Python API Edition!", "sys");
+            log("All actions run continuously via code. Check the API Reference panel above.", "sys");
+        }
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
